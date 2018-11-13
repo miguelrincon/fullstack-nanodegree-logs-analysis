@@ -5,28 +5,29 @@
 import psycopg2
 
 def main():
-  print('Analysis will start...')
+  print('Analysis will start...\n')
   conn = psycopg2.connect(dbname='news')
   most_popular_articles(conn)
   most_popular_authors(conn)
-  more_1_per_centent_errors(conn)
+  days_more__than_1_percent_errors(conn)
+  days_more__than_1_percent_errors_b(conn)
   conn.close()
-  print('Analysis is finished.')
+  print('\nAnalysis is finished.')
 
 def most_popular_articles(conn):
   cur = conn.cursor()
   cur.execute('''
     SELECT articles.title, count(*) AS views
     FROM articles, log
-    WHERE log.path LIKE '/article/' || articles.slug
+    WHERE log.path = '/article/' || articles.slug
     GROUP BY articles.title
     ORDER BY views DESC
-    LIMIT 10;
+    LIMIT 3;
     ''')
   result = cur.fetchall()
   cur.close()
 
-  print_results('Answer 1 - Top 3 articles are:', result)
+  print_results('Answer 1 - What are the most popular three articles of all time?:', result)
   return result
 
 def most_popular_authors(conn):
@@ -35,17 +36,17 @@ def most_popular_authors(conn):
     SELECT authors.name, count(*) as views
     FROM authors, articles, log
     WHERE authors.id = articles.author
-      AND log.path LIKE '/article/' || articles.slug
+      AND log.path = '/article/' || articles.slug
     GROUP BY authors.name
-    ORDER BY views DESC
+    ORDER BY views DESC;
     ''')
   result = cur.fetchall()
   cur.close()
 
-  print_results('Answer 2 - Top authors by views are:', result)
+  print_results('Answer 2 - Who are the most popular article authors of all time?:', result)
   return result
 
-def more_1_per_centent_errors(conn):
+def days_more__than_1_percent_errors(conn):
   cur = conn.cursor()
   cur.execute('''
     SELECT views.day, round((errors.count * 100.0 / views.count), 2) as percent_errors
@@ -64,13 +65,34 @@ def more_1_per_centent_errors(conn):
   result = cur.fetchall()
   cur.close()
 
-  print_results('Answer 3 - Not done:', result, '% errors')
+  print_results('Answer 3 - On which days did more than 1% of requests lead to errors?:', result, '% errors')
   return result
 
-def print_results(header, results, units='views'):
+def days_more__than_1_percent_errors_b(conn):
+  cur = conn.cursor()
+  cur.execute('''
+    SELECT date_trunc('day', time) as day,
+      round(count(errors.is_error) * 100.0 / count(log.id), 2) as percent_errors
+    FROM log
+    LEFT JOIN (
+      SELECT log.id, 1 as is_error
+      FROM log
+      WHERE status NOT LIKE '2__ %'
+    ) as errors
+    ON errors.id = log.id
+    GROUP BY day
+    HAVING count(errors.is_error) * 100.0 / count(log.id) > 1;
+  ''')
+  result = cur.fetchall()
+  cur.close()
+
+  print_results('Answer 3 - On which days did more than 1% of requests lead to errors? (Alternative solution):', result, '% errors')
+  return result
+
+def print_results(header, results, units=' views'):
   print(header)
   for row in results:
-    print ('  \"%s\" -- %s %s' % (row[0], row[1], units))
+    print('  \"%s\" -- %s%s' % (row[0], row[1], units))
 
 if __name__ == '__main__':
   main()
