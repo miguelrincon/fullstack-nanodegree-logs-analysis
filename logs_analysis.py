@@ -3,9 +3,11 @@
 # Analysis of visits in a new website
 
 import psycopg2
+import datetime
 
 
 def main():
+    """Displays a series of results of analysis of news logs."""
     print('Analysis will start...\n')
     conn = psycopg2.connect(dbname='news')
     most_popular_articles(conn)
@@ -17,6 +19,7 @@ def main():
 
 
 def most_popular_articles(conn):
+    """Displays the 3 most popular articles by views."""
     cur = conn.cursor()
     cur.execute('''
     SELECT articles.title, count(*) AS views
@@ -37,6 +40,7 @@ def most_popular_articles(conn):
 
 
 def most_popular_authors(conn):
+    """Displays the most popular authors of all time by views."""
     cur = conn.cursor()
     cur.execute('''
     SELECT authors.name, count(*) as views
@@ -57,17 +61,18 @@ def most_popular_authors(conn):
 
 
 def days_more_than_1_percent_errors(conn):
+    """Displays days which have more than 1% of errors using nested queries."""
     cur = conn.cursor()
     cur.execute('''
     SELECT
         views.day,
         round((errors.count * 100.0 / views.count), 2) as percent_errors
     FROM
-      (SELECT date_trunc('day', time) as day, count(*) as count
+      (SELECT time::date as day, count(*) as count
       FROM log
       GROUP BY day) as views
     JOIN
-      (SELECT date_trunc('day', time) as day, count(*) as count
+      (SELECT time::date as day, count(*) as count
       FROM log
       WHERE status NOT LiKE '2__ %'
       GROUP BY day) as errors
@@ -87,9 +92,10 @@ of requests lead to errors?:',
 
 
 def days_more_than_1_percent_errors_b(conn):
+    """Displays days which have more than 1% of errors using a single join."""
     cur = conn.cursor()
     cur.execute('''
-    SELECT date_trunc('day', time) as day,
+    SELECT time::date as day,
       round(count(errors.is_error) * 100.0 / count(log.id), 2) as perc_errors
     FROM log
     LEFT JOIN (
@@ -114,7 +120,10 @@ of requests lead to errors? (Alternative solution):',
 def print_results(header, results, units=' views'):
     print(header)
     for row in results:
-        print('  \"%s\" -- %s%s' % (row[0], row[1], units))
+        label = row[0]
+        if isinstance(label, datetime.date):
+            label = label.strftime("%B %d, %Y")
+        print('  "{}" -- {}{}'.format(label, row[1], units))
 
 
 if __name__ == '__main__':

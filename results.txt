@@ -10,8 +10,8 @@ Answer 2 - Who are the most popular article authors of all time?:
   "Anonymous Contributor" -- 170098 views
   "Markoff Chaney" -- 84557 views
 Answer 3 - On which days did more than 1% of requests lead to errors?:
-  "2016-07-17 00:00:00+00:00" -- 2.26% errors
+  "July 17, 2016" -- 2.26% errors
 Answer 3 - On which days did more than 1% of requests lead to errors? (Alternative solution):
-  "2016-07-17 00:00:00+00:00" -- 2.26% errors
+  "July 17, 2016" -- 2.26% errors
 
 Analysis is finished.
